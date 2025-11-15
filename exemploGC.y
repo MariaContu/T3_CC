@@ -50,9 +50,7 @@ lcmd : lcmd cmd
 	   |
 	   ;
 	   
-cmd :  ID '=' exp	';' {  System.out.println("\tPOPL %EDX");
-  						   System.out.println("\tMOVL %EDX, _"+$1);
-					     }
+cmd :  exp ';' {  System.out.println("\t\t# terminou o bloco...");  }
 			| '{' lcmd '}' { System.out.println("\t\t# terminou o bloco..."); }
 					     
 					       
@@ -135,6 +133,12 @@ restoIf : ELSE  {
 
 
 exp :  NUM  { System.out.println("\tPUSHL $"+$1); } 
+	|  ID '=' exp {
+		//result exp da dir no topo da pilha
+		System.out.println("\tPOPL %EDX");
+		System.out.println("\tMOVL %EDX, _"+$1);
+		System.out.println("\tPUSHL %EDX");
+	}
     |  TRUE  { System.out.println("\tPUSHL $1"); } 
     |  FALSE  { System.out.println("\tPUSHL $0"); }      
  		| ID   { System.out.println("\tPUSHL _"+$1); }

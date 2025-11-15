@@ -1,0 +1,12 @@
+int a;
+int b;
+
+void main() {
+    a = 10;
+    b = 0;
+
+    b = (a = 5);
+
+    write("a (esperado 5): ", a);
+    write("b (esperado 5): ", b);
+}
