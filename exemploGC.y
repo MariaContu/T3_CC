@@ -10,14 +10,17 @@
 %token WHILE,TRUE, FALSE, IF, ELSE
 %token EQ, LEQ, GEQ, NEQ 
 %token AND, OR
+%token ADDEQ
+%token INC DEC
 
-%right '='
+%right '=' ADDEQ
 %left OR
 %left AND
 %left  '>' '<' EQ LEQ GEQ NEQ
 %left '+' '-'
 %left '*' '/' '%'
 %left '!' 
+%right INC DEC
 
 %type <sval> ID
 %type <sval> LIT
@@ -160,6 +163,21 @@ exp :  NUM  { System.out.println("\tPUSHL $"+$1); }
 												
 		| exp OR exp		{ gcExpLog(OR); }											
 		| exp AND exp		{ gcExpLog(AND); }											
+
+		|  ID '=' exp {
+			//result exp da dir no topo da pilha
+			System.out.println("\tPOPL %EDX");
+			System.out.println("\tMOVL %EDX, _"+$1);
+			System.out.println("\tPUSHL %EDX");
+		}
+
+		| ID ADDEQ exp {
+			System.out.println("\tPOPL %EAX");
+			System.out.println("\tMOVL _"+$1+", %EDX");
+			System.out.println("\tADDL %EAX, %EDX");
+			System.out.println("\tMOVL %EDX, _"+$1);
+			System.out.println("\tPUSHL %EDX");
+		}	
 		
 		;							
 

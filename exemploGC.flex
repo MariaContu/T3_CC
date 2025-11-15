@@ -32,6 +32,10 @@ NL  = \n | \r | \r\n
 {NL}   {yyline++;}
 [ \t]+ { }
 
+"+="    { return Parser.ADDEQ; }
+"++"    { return Parser.INC; }
+"--"    { return Parser.DEC; }
+
 /* operadores */
 
 "+" |
@@ -51,6 +55,7 @@ NL  = \n | \r | \r\n
 "," |
 "\[" | 
 "\]"    { return (int) yycharat(0); }
+
 
 {NUM}  { yyparser.yylval = new ParserVal(yytext()); 
          return Parser.NUM; }
