@@ -1,0 +1,14 @@
+int x;
+int y;
+int z;
+
+void main() {
+    x = 10;
+    y = 20;
+
+    z = (x < y) ? x : y;
+    write("z (esperado 10): ", z);
+
+    z = (x > y) ? x : y;
+    write("z (esperado 20): ", z);
+}

@@ -206,8 +206,29 @@ exp :  NUM  { System.out.println("\tPUSHL $"+$1); }
         System.out.println("\tMOVL %EAX, _"+$2);
         System.out.println("\tPUSHL %EAX");
     }
-		
-		;							
+
+	| exp '?' exp ':' exp {
+		System.out.println("\tPOPL %ECX");
+        System.out.println("\tPOPL %EBX");
+        System.out.println("\tPOPL %EAX");
+
+		int rFalse = proxRot++;
+        int rFim   = proxRot++;
+
+        System.out.println("\tCMPL $0, %EAX");
+        System.out.printf("\tJE rot_%02d\n", rFalse);
+
+        System.out.println("\tMOVL %EBX, %EDX");
+        System.out.printf("\tJMP rot_%02d\n", rFim);
+
+        System.out.printf("rot_%02d:\n", rFalse);
+        System.out.println("\tMOVL %ECX, %EDX");
+
+        System.out.printf("rot_%02d:\n", rFim);
+        System.out.println("\tPUSHL %EDX");
+	}
+
+;							
 
 
 %%
