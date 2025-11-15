@@ -148,36 +148,64 @@ exp :  NUM  { System.out.println("\tPUSHL $"+$1); }
     | '(' exp	')' 
     | '!' exp       { gcExpNot(); }
      
-		| exp '+' exp		{ gcExpArit('+'); }
-		| exp '-' exp		{ gcExpArit('-'); }
-		| exp '*' exp		{ gcExpArit('*'); }
-		| exp '/' exp		{ gcExpArit('/'); }
-		| exp '%' exp		{ gcExpArit('%'); }
-																			
-		| exp '>' exp		{ gcExpRel('>'); }
-		| exp '<' exp		{ gcExpRel('<'); }											
-		| exp EQ exp		{ gcExpRel(EQ); }											
-		| exp LEQ exp		{ gcExpRel(LEQ); }											
-		| exp GEQ exp		{ gcExpRel(GEQ); }											
-		| exp NEQ exp		{ gcExpRel(NEQ); }											
+	| exp '+' exp		{ gcExpArit('+'); }
+	| exp '-' exp		{ gcExpArit('-'); }
+	| exp '*' exp		{ gcExpArit('*'); }
+	| exp '/' exp		{ gcExpArit('/'); }
+	| exp '%' exp		{ gcExpArit('%'); }
+																		
+	| exp '>' exp		{ gcExpRel('>'); }
+	| exp '<' exp		{ gcExpRel('<'); }											
+	| exp EQ exp		{ gcExpRel(EQ); }											
+	| exp LEQ exp		{ gcExpRel(LEQ); }											
+	| exp GEQ exp		{ gcExpRel(GEQ); }											
+	| exp NEQ exp		{ gcExpRel(NEQ); }											
 												
-		| exp OR exp		{ gcExpLog(OR); }											
-		| exp AND exp		{ gcExpLog(AND); }											
+	| exp OR exp		{ gcExpLog(OR); }											
+	| exp AND exp		{ gcExpLog(AND); }											
 
-		|  ID '=' exp {
-			//result exp da dir no topo da pilha
-			System.out.println("\tPOPL %EDX");
-			System.out.println("\tMOVL %EDX, _"+$1);
-			System.out.println("\tPUSHL %EDX");
-		}
+	|  ID '=' exp {
+		//result exp da dir no topo da pilha
+		System.out.println("\tPOPL %EDX");
+		System.out.println("\tMOVL %EDX, _"+$1);
+		System.out.println("\tPUSHL %EDX");
+	}
 
-		| ID ADDEQ exp {
-			System.out.println("\tPOPL %EAX");
-			System.out.println("\tMOVL _"+$1+", %EDX");
-			System.out.println("\tADDL %EAX, %EDX");
-			System.out.println("\tMOVL %EDX, _"+$1);
-			System.out.println("\tPUSHL %EDX");
-		}	
+	| ID ADDEQ exp {
+		System.out.println("\tPOPL %EAX");
+		System.out.println("\tMOVL _"+$1+", %EDX");
+		System.out.println("\tADDL %EAX, %EDX");
+		System.out.println("\tMOVL %EDX, _"+$1);
+		System.out.println("\tPUSHL %EDX");
+	}	
+
+	| ID INC {
+       System.out.println("\tPUSHL _"+$1+"");
+       System.out.println("\tMOVL _"+$1+", %EAX");
+       System.out.println("\tADDL $1, %EAX");
+       System.out.println("\tMOVL %EAX, _"+$1);
+    }
+
+    | ID DEC {
+        System.out.println("\tPUSHL _"+$1+"");
+        System.out.println("\tMOVL _"+$1+", %EAX");
+        System.out.println("\tSUBL $1, %EAX");
+        System.out.println("\tMOVL %EAX, _"+$1);
+    }
+
+    | INC ID {
+        System.out.println("\tMOVL _"+$2+", %EAX");
+        System.out.println("\tADDL $1, %EAX");
+        System.out.println("\tMOVL %EAX, _"+$2);
+        System.out.println("\tPUSHL %EAX");
+    }
+
+    | DEC ID {
+        System.out.println("\tMOVL _"+$2+", %EAX");
+        System.out.println("\tSUBL $1, %EAX");
+        System.out.println("\tMOVL %EAX, _"+$2);
+        System.out.println("\tPUSHL %EAX");
+    }
 		
 		;							
 

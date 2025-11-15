@@ -1,0 +1,18 @@
+int a;
+int b;
+int c;
+
+void main() {
+    a = 10;
+
+    b = a++;
+    c = ++a;
+
+    write("a (esperado 12): ", a);
+    write("b (esperado 10): ", b);
+    write("c (esperado 12): ", c);
+
+    a--;
+    --a;
+    write("a (esperado 10): ", a);
+}
