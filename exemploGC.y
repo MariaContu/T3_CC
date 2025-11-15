@@ -7,7 +7,7 @@
  
 
 %token ID, INT, FLOAT, BOOL, NUM, LIT, VOID, MAIN, READ, WRITE, IF, ELSE
-%token WHILE,TRUE, FALSE, IF, ELSE
+%token DO, WHILE, TRUE, FALSE, IF, ELSE
 %token EQ, LEQ, GEQ, NEQ 
 %token AND, OR
 %token ADDEQ
@@ -104,20 +104,34 @@ cmd :  exp ';' {  System.out.println("\t\t# terminou o bloco...");  }
 							pRot.pop();
 							}  
 							
-			| IF '(' exp {	
-											pRot.push(proxRot);  proxRot += 2;
-															
-											System.out.println("\tPOPL %EAX");
-											System.out.println("\tCMPL $0, %EAX");
-											System.out.printf("\tJE rot_%02d\n", pRot.peek());
-										}
-								')' cmd 
+	| IF '(' exp {	
+		pRot.push(proxRot);  proxRot += 2;
+												
+		System.out.println("\tPOPL %EAX");
+		System.out.println("\tCMPL $0, %EAX");
+		System.out.printf("\tJE rot_%02d\n", pRot.peek());
+		}
+	')' cmd 
+    restoIf {
+		System.out.printf("rot_%02d:\n",pRot.peek()+1);
+		pRot.pop();
+		}
 
-             restoIf {
-											System.out.printf("rot_%02d:\n",pRot.peek()+1);
-											pRot.pop();
-										}
-     ;
+	| DO {
+		pRot.push(proxRot);  proxRot += 2;
+        int inicio = pRot.peek();
+        int fim    = inicio + 1;
+        System.out.printf("rot_%02d:\n", inicio);
+	}
+	cmd WHILE '(' exp ')' ';' {
+		System.out.println("\tPOPL %EAX   # teste do-while");
+        System.out.println("\tCMPL $0, %EAX");
+        System.out.printf("\tJNE rot_%02d\n", pRot.peek());
+        System.out.printf("rot_%02d:\n", pRot.peek()+1);
+        pRot.pop();
+	}
+	
+    ;
      
      
 restoIf : ELSE  {
@@ -133,7 +147,6 @@ restoIf : ELSE  {
 				System.out.printf("rot_%02d:\n",pRot.peek());
 				} 
 		;										
-
 
 exp :  NUM  { System.out.println("\tPUSHL $"+$1); } 
 	|  ID '=' exp {
