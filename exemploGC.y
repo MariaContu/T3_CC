@@ -7,11 +7,11 @@
  
 
 %token ID, INT, FLOAT, BOOL, NUM, LIT, VOID, MAIN, READ, WRITE, IF, ELSE
-%token FOR, DO, WHILE, TRUE, FALSE, IF, ELSE
+%token FOR, DO, WHILE, TRUE, FALSE, IF, ELSE, CONTINUE, BREAK
 %token EQ, LEQ, GEQ, NEQ 
 %token AND, OR
 %token ADDEQ
-%token INC DEC
+%token INC, DEC
 
 %right '=' ADDEQ
 %left OR
@@ -90,19 +90,25 @@ cmd :  exp ';' {  System.out.println("\t\t# terminou o bloco...");  }
 								}
          
     | WHILE {
-					pRot.push(proxRot);  proxRot += 2;
-					System.out.printf("rot_%02d:\n",pRot.peek());
-				  } 
-			 '(' exp ')' {
-			 							System.out.println("\tPOPL %EAX   # desvia se falso...");
-											System.out.println("\tCMPL $0, %EAX");
-											System.out.printf("\tJE rot_%02d\n", (int)pRot.peek()+1);
-										} 
-				cmd		{
-				  		System.out.printf("\tJMP rot_%02d   # terminou cmd na linha de cima\n", pRot.peek());
-							System.out.printf("rot_%02d:\n",(int)pRot.peek()+1);
-							pRot.pop();
-							}  
+			pRot.push(proxRot);  proxRot += 2;
+            int inicio = pRot.peek();
+            int fim    = inicio + 1;
+            pContinue.push(inicio);
+            pBreak.push(fim);
+            System.out.printf("rot_%02d:\n", inicio);
+		} 
+		'(' exp ')' {
+			System.out.println("\tPOPL %EAX   # desvia se falso...");
+			System.out.println("\tCMPL $0, %EAX");
+			System.out.printf("\tJE rot_%02d\n", (int)pRot.peek()+1);
+		} 
+		cmd		{
+			System.out.printf("\tJMP rot_%02d   # volta pro inicio\n", (int)pContinue.peek());
+            System.out.printf("rot_%02d:\n",(int)pBreak.peek());
+            pRot.pop();
+            pContinue.pop();
+            pBreak.pop();
+		}  
 							
 	| IF '(' exp {	
 		pRot.push(proxRot);  proxRot += 2;
@@ -118,17 +124,31 @@ cmd :  exp ';' {  System.out.println("\t\t# terminou o bloco...");  }
 		}
 
 	| DO {
-		pRot.push(proxRot);  proxRot += 2;
-        int inicio = pRot.peek();
-        int fim    = inicio + 1;
-        System.out.printf("rot_%02d:\n", inicio);
+		pRot.push(proxRot);  proxRot += 3;
+        int corpo = pRot.peek();
+        int cond  = corpo + 1;
+        int fim   = corpo + 2;
+
+        pBreak.push(fim);
+        pContinue.push(cond);
+
+        System.out.printf("rot_%02d:\n", corpo);
 	}
 	cmd WHILE '(' exp ')' ';' {
-		System.out.println("\tPOPL %EAX   # teste do-while");
+		int corpo = pRot.peek();
+        int cond  = corpo + 1;
+        int fim   = corpo + 2;
+
+        System.out.printf("rot_%02d:\n", cond);
+		System.out.println("\tPOPL %EAX");
         System.out.println("\tCMPL $0, %EAX");
-        System.out.printf("\tJNE rot_%02d\n", pRot.peek());
-        System.out.printf("rot_%02d:\n", pRot.peek()+1);
+        System.out.printf("\tJNE rot_%02d\n", corpo);
+
+        System.out.printf("rot_%02d:\n", fim);
+
         pRot.pop();
+        pBreak.pop();
+        pContinue.pop();
 	}
 	
 	| FOR '(' forInit ';' {
@@ -141,6 +161,9 @@ cmd :  exp ';' {  System.out.println("\t\t# terminou o bloco...");  }
         pRot.push(lBody);
         pRot.push(lInc);
         pRot.push(lEnd); 
+
+		pBreak.push(lEnd);
+		pContinue.push(lInc);
 	
 		System.out.printf("\tJMP rot_%02d\n", lCond);
 		System.out.printf("rot_%02d:\n", lCond);
@@ -182,8 +205,25 @@ cmd :  exp ';' {  System.out.println("\t\t# terminou o bloco...");  }
 		pRot.pop();
 		pRot.pop();
 		pRot.pop();
+		
+		pBreak.pop();
+        pContinue.pop();
 	}
-	
+	| BREAK ';' {
+          if (pBreak.empty()) {
+              yyerror("break fora de laco");
+          } else {
+              System.out.printf("\tJMP rot_%02d\n", (int)pBreak.peek());
+          }
+      }
+    | CONTINUE ';' {
+          if (pContinue.empty()) {
+              yyerror("continue fora de laco");
+          } else {
+              System.out.printf("\tJMP rot_%02d\n", (int)pContinue.peek());
+          }
+      }
+
     ;
      
      
@@ -322,6 +362,8 @@ forInc :
   private Stack<Integer> pRot = new Stack<Integer>();
   private int proxRot = 1;
 
+  private Stack<Integer> pBreak = new Stack<Integer>();
+  private Stack<Integer> pContinue = new Stack<Integer>();
 
   public static int ARRAY = 100;
 

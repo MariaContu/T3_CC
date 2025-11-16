@@ -80,6 +80,8 @@ read   { return Parser.READ; }
 do     { return Parser.DO; }
 while   { return Parser.WHILE; }
 for   { return Parser.FOR; }
+break    { return Parser.BREAK; }
+continue { return Parser.CONTINUE; }
 if   { return Parser.IF; }
 else   { return Parser.ELSE; }
 true   { return Parser.TRUE; }
