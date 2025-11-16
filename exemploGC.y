@@ -7,7 +7,7 @@
  
 
 %token ID, INT, FLOAT, BOOL, NUM, LIT, VOID, MAIN, READ, WRITE, IF, ELSE
-%token DO, WHILE, TRUE, FALSE, IF, ELSE
+%token FOR, DO, WHILE, TRUE, FALSE, IF, ELSE
 %token EQ, LEQ, GEQ, NEQ 
 %token AND, OR
 %token ADDEQ
@@ -131,6 +131,59 @@ cmd :  exp ';' {  System.out.println("\t\t# terminou o bloco...");  }
         pRot.pop();
 	}
 	
+	| FOR '(' forInit ';' {
+		int lCond = proxRot++;
+        int lBody = proxRot++;
+        int lInc  = proxRot++;
+        int lEnd  = proxRot++;
+
+		pRot.push(lCond);
+        pRot.push(lBody);
+        pRot.push(lInc);
+        pRot.push(lEnd); 
+	
+		System.out.printf("\tJMP rot_%02d\n", lCond);
+		System.out.printf("rot_%02d:\n", lCond);
+	} forCond ';' {
+		int size = pRot.size();
+		int lEnd  = pRot.get(size-1);
+		int lInc  = pRot.get(size-2);
+		int lBody = pRot.get(size-3);
+		int lCond = pRot.get(size-4);
+
+		System.out.println("\tPOPL %EAX   # condicao do for");
+		System.out.println("\tCMPL $0, %EAX");
+		System.out.printf("\tJE rot_%02d\n", lEnd);
+		System.out.printf("\tJMP rot_%02d\n", lBody);
+
+		System.out.printf("rot_%02d:\n", lInc);
+	} forInc ')' {
+		int size = pRot.size();
+		int lEnd  = pRot.get(size-1);
+		int lInc  = pRot.get(size-2);
+		int lBody = pRot.get(size-3);
+		int lCond = pRot.get(size-4);
+
+		System.out.printf("\tJMP rot_%02d\n", lCond);
+
+		System.out.printf("rot_%02d:\n", lBody);
+	} cmd {
+		int size = pRot.size();
+		int lEnd  = pRot.get(size-1);
+		int lInc  = pRot.get(size-2);
+		int lBody = pRot.get(size-3);
+		int lCond = pRot.get(size-4);
+
+		System.out.printf("\tJMP rot_%02d\n", lInc);
+
+		System.out.printf("rot_%02d:\n", lEnd);
+
+		pRot.pop();
+		pRot.pop();
+		pRot.pop();
+		pRot.pop();
+	}
+	
     ;
      
      
@@ -240,9 +293,22 @@ exp :  NUM  { System.out.println("\tPUSHL $"+$1); }
         System.out.printf("rot_%02d:\n", rFim);
         System.out.println("\tPUSHL %EDX");
 	}
+	;							
 
-;							
+forInit : 
+	| exp {
+		System.out.println("\tPOPL %EAX");
+	}
+	;
 
+forCond : {System.out.println("\tPUSHL $1");}
+	| exp
+	;
+
+forInc : 
+	| exp {
+		System.out.println("\tPOPL %EAX");
+	}
 
 %%
 

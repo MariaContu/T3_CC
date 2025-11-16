@@ -1,0 +1,12 @@
+int i;
+int soma;
+
+void main() {
+    soma = 0;
+
+    for (i = 0; i < 5; i = i + 1) {
+        soma += i;
+    }
+
+    write("soma (esperado 10): ", soma);
+}
