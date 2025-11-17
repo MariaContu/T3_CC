@@ -25,6 +25,7 @@
 %type <sval> LIT
 %type <sval> NUM
 %type <ival> type
+%type <obj>  field_list field_decl
 
 %%
 
@@ -47,12 +48,13 @@ decl :
       }
     /* definicao de struct: struct Nome { campos } */
     | STRUCT ID '{' field_list '}' {
-          String structName = $2;
-          java.util.ArrayList campos = (java.util.ArrayList)$4.obj;
-          TS_entry def = new TS_entry(structName, TS_entry.TYPE_STRUCT_DEF);
-          def.setCampos(campos);    /* guarda a lista de campos diretamente */
-          ts.insert(def);
-      }
+      String structName = $2;
+      java.util.ArrayList campos = (java.util.ArrayList)$4;
+      TS_entry def = new TS_entry(structName, TS_entry.TYPE_STRUCT_DEF);
+      def.setCampos(campos);
+      ts.insert(def);
+	  }
+
     /* declaracao de variavel do tipo struct: struct Nome var; */
     | STRUCT ID ID ';' {
           String structType = $2;
@@ -69,26 +71,33 @@ decl :
     ;
 
 field_list :
-    field_list field_decl {
-        java.util.ArrayList campos = (java.util.ArrayList)$1.obj;
+    field_list field_decl
+    {
+        java.util.ArrayList campos = (java.util.ArrayList)$1;
         if (campos == null) campos = new java.util.ArrayList();
-        campos.add($2.obj);
-        yyval.obj = campos;
+        campos.add($2);
+        $$ = campos;
     }
-  | field_decl {
+  | field_decl
+    {
         java.util.ArrayList campos = new java.util.ArrayList();
-        campos.add($1.obj);
-        yyval.obj = campos;
+        campos.add($1);
+        $$ = campos;
     }
-  | /* vazio */ { yyval.obj = new java.util.ArrayList(); }
+  | /* vazio */
+    {
+        $$ = new java.util.ArrayList();
+    }
 ;
 
 field_decl :
-    type ID ';' {
+    type ID ';'
+    {
         TS_entry campo = new TS_entry($2, $1);
-        yyval.obj = campo;
+        $$ = campo;
     }
 ;
+
 
 type : INT    { $$ = INT; }
      | FLOAT  { $$ = FLOAT; }

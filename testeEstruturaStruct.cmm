@@ -1,0 +1,21 @@
+struct Ponto {
+    int x;
+    int y;
+}
+
+struct Ponto p;
+int a;
+int b;
+
+void main() {
+    p.x = 10;
+    p.y = 20;
+
+    a = p.x + p.y;
+    b = p.y - p.x;
+
+    write("Valor de p.x: ", p.x);
+    write("Valor de p.y: ", p.y);
+    write("Soma (a): ", a);
+    write("Diferenca (b): ", b);
+}
