@@ -1,10 +1,8 @@
-	
 %{
   import java.io.*;
   import java.util.ArrayList;
   import java.util.Stack;
 %}
- 
 
 %token ID, INT, FLOAT, BOOL, NUM, LIT, VOID, MAIN, READ, WRITE, IF, ELSE
 %token FOR, DO, WHILE, TRUE, FALSE, IF, ELSE, CONTINUE, BREAK
@@ -12,6 +10,7 @@
 %token AND, OR
 %token ADDEQ
 %token INC, DEC
+%token STRUCT
 
 %right '=' ADDEQ
 %left OR
@@ -27,7 +26,6 @@
 %type <sval> NUM
 %type <ival> type
 
-
 %%
 
 prog : { geraInicio(); } dList mainF { geraAreaDados(); geraAreaLiterais(); } ;
@@ -38,11 +36,59 @@ mainF : VOID MAIN '(' ')'   { System.out.println("_start:"); }
 
 dList : decl dList | ;
 
-decl : type ID ';' {  TS_entry nodo = ts.pesquisa($2);
-    	                if (nodo != null) 
-                            yyerror("(sem) variavel >" + $2 + "< jah declarada");
-                        else ts.insert(new TS_entry($2, $1)); }
-      ;
+decl :
+    /* variavel simples */ 
+      type ID ';' {
+          TS_entry nodo = ts.pesquisa($2);
+          if (nodo != null)
+              yyerror("(sem) variavel >" + $2 + "< jah declarada");
+          else
+              ts.insert(new TS_entry($2, $1));   /* continua sendo TYPE_VAR internamente */
+      }
+    /* definicao de struct: struct Nome { campos } */
+    | STRUCT ID '{' field_list '}' {
+          String structName = $2;
+          java.util.ArrayList campos = (java.util.ArrayList)$4.obj;
+          TS_entry def = new TS_entry(structName, TS_entry.TYPE_STRUCT_DEF);
+          def.setCampos(campos);    /* guarda a lista de campos diretamente */
+          ts.insert(def);
+      }
+    /* declaracao de variavel do tipo struct: struct Nome var; */
+    | STRUCT ID ID ';' {
+          String structType = $2;
+          String varName = $3;
+          TS_entry def = ts.pesquisa(structType);
+          if (def == null || def.getCampos() == null) {
+              yyerror("tipo struct nao declarado: " + structType);
+          } else {
+              TS_entry v = new TS_entry(varName, TS_entry.TYPE_STRUCT_VAR);
+              v.setTipoStruct(structType);
+              ts.insert(v);
+          }
+      }
+    ;
+
+field_list :
+    field_list field_decl {
+        java.util.ArrayList campos = (java.util.ArrayList)$1.obj;
+        if (campos == null) campos = new java.util.ArrayList();
+        campos.add($2.obj);
+        yyval.obj = campos;
+    }
+  | field_decl {
+        java.util.ArrayList campos = new java.util.ArrayList();
+        campos.add($1.obj);
+        yyval.obj = campos;
+    }
+  | /* vazio */ { yyval.obj = new java.util.ArrayList(); }
+;
+
+field_decl :
+    type ID ';' {
+        TS_entry campo = new TS_entry($2, $1);
+        yyval.obj = campo;
+    }
+;
 
 type : INT    { $$ = INT; }
      | FLOAT  { $$ = FLOAT; }
@@ -55,8 +101,7 @@ lcmd : lcmd cmd
 	   
 cmd :  exp ';' {  System.out.println("\t\t# terminou o bloco...");  }
 			| '{' lcmd '}' { System.out.println("\t\t# terminou o bloco..."); }
-					     
-					       
+
       | WRITE '(' LIT ')' ';' { strTab.add($3);
                                 System.out.println("\tMOVL $_str_"+strCount+"Len, %EDX"); 
 				System.out.println("\tMOVL $_str_"+strCount+", %ECX"); 
@@ -86,7 +131,6 @@ cmd :  exp ';' {  System.out.println("\t\t# terminou o bloco...");  }
 									System.out.println("\tCALL _read");
 									System.out.println("\tPOPL %EDX");
 									System.out.println("\tMOVL %EAX, (%EDX)");
-									
 								}
          
     | WHILE {
@@ -112,7 +156,7 @@ cmd :  exp ';' {  System.out.println("\t\t# terminou o bloco...");  }
 							
 	| IF '(' exp {	
 		pRot.push(proxRot);  proxRot += 2;
-												
+												 
 		System.out.println("\tPOPL %EAX");
 		System.out.println("\tCMPL $0, %EAX");
 		System.out.printf("\tJE rot_%02d\n", pRot.peek());
@@ -226,15 +270,10 @@ cmd :  exp ';' {  System.out.println("\t\t# terminou o bloco...");  }
 
     ;
      
-     
 restoIf : ELSE  {
 											System.out.printf("\tJMP rot_%02d\n", pRot.peek()+1);
 											System.out.printf("rot_%02d:\n",pRot.peek());
-								
-										} 							
-							cmd  
-							
-							
+								} cmd  
 		| {
 		    System.out.printf("\tJMP rot_%02d\n", pRot.peek()+1);
 				System.out.printf("rot_%02d:\n",pRot.peek());
@@ -243,14 +282,13 @@ restoIf : ELSE  {
 
 exp :  NUM  { System.out.println("\tPUSHL $"+$1); } 
 	|  ID '=' exp {
-		//result exp da dir no topo da pilha
 		System.out.println("\tPOPL %EDX");
 		System.out.println("\tMOVL %EDX, _"+$1);
 		System.out.println("\tPUSHL %EDX");
 	}
     |  TRUE  { System.out.println("\tPUSHL $1"); } 
     |  FALSE  { System.out.println("\tPUSHL $0"); }      
- 		| ID   { System.out.println("\tPUSHL _"+$1); }
+ 	| ID   { System.out.println("\tPUSHL _"+$1); }
     | '(' exp	')' 
     | '!' exp       { gcExpNot(); }
      
@@ -261,21 +299,14 @@ exp :  NUM  { System.out.println("\tPUSHL $"+$1); }
 	| exp '%' exp		{ gcExpArit('%'); }
 																		
 	| exp '>' exp		{ gcExpRel('>'); }
-	| exp '<' exp		{ gcExpRel('<'); }											
-	| exp EQ exp		{ gcExpRel(EQ); }											
-	| exp LEQ exp		{ gcExpRel(LEQ); }											
-	| exp GEQ exp		{ gcExpRel(GEQ); }											
-	| exp NEQ exp		{ gcExpRel(NEQ); }											
-												
-	| exp OR exp		{ gcExpLog(OR); }											
+	| exp '<' exp		{ gcExpRel('<'); }											 
+	| exp EQ exp		{ gcExpRel(EQ); }											 
+	| exp LEQ exp		{ gcExpRel(LEQ); }											 
+	| exp GEQ exp		{ gcExpRel(GEQ); }											 
+	| exp NEQ exp		{ gcExpRel(NEQ); }											 
+												 
+	| exp OR exp		{ gcExpLog(OR); }											 
 	| exp AND exp		{ gcExpLog(AND); }											
-
-	|  ID '=' exp {
-		//result exp da dir no topo da pilha
-		System.out.println("\tPOPL %EDX");
-		System.out.println("\tMOVL %EDX, _"+$1);
-		System.out.println("\tPUSHL %EDX");
-	}
 
 	| ID ADDEQ exp {
 		System.out.println("\tPOPL %EAX");
@@ -333,7 +364,47 @@ exp :  NUM  { System.out.println("\tPUSHL $"+$1); }
         System.out.printf("rot_%02d:\n", rFim);
         System.out.println("\tPUSHL %EDX");
 	}
-	;							
+
+    /* acesso simples a campo: var.campo */
+    | ID '.' ID {
+        TS_entry var = ts.pesquisa($1);
+        if (var == null) {
+            yyerror("variavel nao declarada: " + $1);
+            System.out.println("\tPUSHL $0");
+        } else if (var.getTipoStruct() == null) {
+            yyerror("nao e struct: " + $1);
+            System.out.println("\tPUSHL $0");
+        } else {
+            TS_entry def = ts.pesquisa(var.getTipoStruct());
+            if (def == null || def.getCampos() == null) {
+                yyerror("definicao da struct nao encontrada: " + var.getTipoStruct());
+                System.out.println("\tPUSHL $0");
+            } else {
+                java.util.ArrayList campos = def.getCampos();
+                TS_entry campo = null;
+                for (int i=0;i<campos.size();i++) {
+                    TS_entry c = (TS_entry)campos.get(i);
+                    if (c.getId().equals($3)) { campo = c; break; }
+                }
+                if (campo == null) {
+                    yyerror("campo nao existe: " + $3);
+                    System.out.println("\tPUSHL $0");
+                } else {
+                    System.out.println("\tPUSHL _" + $1 + "_" + $3);
+                }
+            }
+        }
+    }
+
+    /* atribuicao em campo: var.campo = exp */
+    | ID '.' ID '=' exp {
+        System.out.println("\tPOPL %EAX");
+        System.out.println("\tMOVL %EAX, _" + $1 + "_" + $3);
+        System.out.println("\tPUSHL %EAX");
+    }
+
+	;
+							
 
 forInit : 
 	| exp {
@@ -349,7 +420,6 @@ forInc :
 	| exp {
 		System.out.println("\tPOPL %EAX");
 	}
-
 %%
 
   private Yylex lexer;
@@ -602,4 +672,3 @@ forInc :
 	           System.out.println("_str_"+i+"Len = . - _str_"+i);  
 	      }		
    }
-   

@@ -1,0 +1,14 @@
+@'
+struct Ponto {
+  int x;
+  int y;
+}
+
+void main() {
+  struct Ponto p;
+  p.x = 10;
+  p.y = 20;
+  write("x:", p.x);
+  write("y:", p.y);
+}
+'@ | Out-File -Encoding UTF8 testEstrutura7.cmm
